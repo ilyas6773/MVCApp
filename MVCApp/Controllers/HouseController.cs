@@ -20,6 +20,7 @@ namespace MVCApp.Controllers
         [HttpGet("GetAll")]
         public async Task<IEnumerable<House>> GetAll()
         {
+            
             return await houseService.GetAllHouses();
         }
 
@@ -67,5 +68,13 @@ namespace MVCApp.Controllers
             return Ok();
         }
 
+        /////////////////////////Statistika//////////////////////////////
+        [HttpGet("GetStats")]
+        public async Task<IActionResult> GetStats()
+        {
+            var stats = await houseService.Statistics();
+
+            return Ok(stats);
+        }
     }
 }

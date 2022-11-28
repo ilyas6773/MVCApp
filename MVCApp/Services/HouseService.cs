@@ -1,6 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using MVCAppData;
+using System.Linq;
 
 namespace MVCApp.Services
 {
@@ -20,9 +22,13 @@ namespace MVCApp.Services
         }
 
         ///////////////////////////////////////////////////////////
+        public async Task<IEnumerable<House>> GetForStats()
+        {
+            return await context.Houses1.ToListAsync();
+        }
         public async Task<IEnumerable<House>> GetAllHouses()
         {
-            return await context.Houses1.Where(p=>p.status==1).ToListAsync();
+            return await context.Houses1.Where(p => p.status == 1).ToListAsync();
         }
 
         ///////////////////////////////////////////////////////////
@@ -92,5 +98,59 @@ namespace MVCApp.Services
             context.Houses1.Update(_house);
             await context.SaveChangesAsync();
         }
+
+        ///////////////////////////////////////////////////////////
+
+        public async Task<HouseStatistiks?> Statistics()
+        {
+            var houses = await GetForStats();
+            if (houses.Count() == 0)
+            {
+                return null;
+            }
+
+            List<DateTime> vals = DateStat(houses);
+
+            var stats = new HouseStatistiks()
+            {
+                CountHouses = houses.Count(),
+                AdAgeStats = new()
+                {
+                    Max = vals[1],
+                    Min = vals[0]
+                },
+                PriceStats = new()
+                {
+                    Max = houses.Where(p => p.status == 1).Max(x => x.Price),
+                    Min = houses.Where(p => p.status == 1).Min(x => x.Price),
+                    Ave = (int)houses.Where(p => p.status == 1).Average(x => x.Price)
+                },
+                NumberOfActiveHouses = houses.Where(x => x.status == 1).Count(),
+                NumberOfInactiveHouses = houses.Where(x => x.status == 0).Count()
+            };
+ 
+
+            return stats;
+        }
+
+        public List<DateTime> DateStat(IEnumerable<House> houses)
+        {
+            List<DateTime> days = new();
+            int x = 0;
+
+            foreach(var house in houses.Where(p =>p.status==1))
+            {
+                days.Add(house.PublicationDate);
+                x++;
+            }
+            List<DateTime> result = new();
+
+            result.Add(days.AsQueryable().Min());
+            result.Add(days.AsQueryable().Max());
+
+
+            return result;
+        }
+
     }
 }
